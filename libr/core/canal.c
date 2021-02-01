@@ -734,7 +734,7 @@ static bool is_entry_flag(RFlagItem *f) {
 	return f->space && !strcmp (f->space->name, R_FLAGS_FS_SYMBOLS) && r_str_startswith (f->name, "entry.");
 }
 
-static int __core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int depth) {
+static bool __core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int depth) {
 	if (depth < 0) {
 //		printf ("Too deep for 0x%08"PFMT64x"\n", at);
 //		r_sys_backtrace ();
@@ -1938,6 +1938,10 @@ static bool is_skippable_addr(RCore *core, ut64 addr) {
  * If the function has been already analyzed, it adds a
  * reference to that fcn */
 R_API int r_core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int depth) {
+	if (depth < 1) {
+		eprintf ("Message: Early deepness at 0x%08"PFMT64x"\n", at);
+		return 0;
+	}
 	if (from == UT64_MAX && is_skippable_addr (core, at)) {
 		if (core->anal->verbose) {
 			eprintf ("Message: Invalid address for function 0x%08"PFMT64x"\n", at);
@@ -4133,17 +4137,16 @@ R_API int r_core_anal_all(RCore *core) {
 	RBinAddr *binmain;
 	RBinAddr *entry;
 	RBinSymbol *symbol;
-	int depth = core->anal->opt.depth;
-	bool anal_vars = r_config_get_i (core->config, "anal.vars");
+	const bool anal_vars = r_config_get_i (core->config, "anal.vars");
+	const bool anal_calls = r_config_get_i (core->config, "anal.calls");
 
 	/* Analyze Functions */
 	/* Entries */
 	item = r_flag_get (core->flags, "entry0");
 	if (item) {
-		r_core_anal_fcn (core, item->offset, -1, R_ANAL_REF_TYPE_NULL, depth - 1);
-		r_core_cmdf (core, "afn entry0 0x%08"PFMT64x, item->offset);
+		r_core_af (core, item->offset, "entry0", anal_calls);
 	} else {
-		r_core_cmd0 (core, "af");
+		r_core_af (core, core->offset, NULL, anal_calls);
 	}
 
 	r_core_task_yield (&core->tasks);
@@ -4162,7 +4165,7 @@ R_API int r_core_anal_all(RCore *core) {
 			if (isValidSymbol (symbol)) {
 				ut64 addr = r_bin_get_vaddr (core->bin, symbol->paddr,
 					symbol->vaddr);
-				r_core_anal_fcn (core, addr, -1, R_ANAL_REF_TYPE_NULL, depth - 1);
+				r_core_af (core, addr, symbol->name, anal_calls);
 			}
 		}
 	}
@@ -4171,17 +4174,20 @@ R_API int r_core_anal_all(RCore *core) {
 	if ((binmain = r_bin_get_sym (core->bin, R_BIN_SYM_MAIN))) {
 		if (binmain->paddr != UT64_MAX) {
 			ut64 addr = r_bin_get_vaddr (core->bin, binmain->paddr, binmain->vaddr);
-			r_core_anal_fcn (core, addr, -1, R_ANAL_REF_TYPE_NULL, depth - 1);
+			r_core_af (core, addr, "main", anal_calls);
 		}
 	}
 	r_core_task_yield (&core->tasks);
 	if ((list = r_bin_get_entries (core->bin))) {
+		size_t count = 0;
 		r_list_foreach (list, iter, entry) {
 			if (entry->paddr == UT64_MAX) {
 				continue;
 			}
 			ut64 addr = r_bin_get_vaddr (core->bin, entry->paddr, entry->vaddr);
-			r_core_anal_fcn (core, addr, -1, R_ANAL_REF_TYPE_NULL, depth - 1);
+			char *name = r_str_newf ("entry%zd", count++);
+			r_core_af (core, addr, name, anal_calls);
+			free (name);
 		}
 	}
 	r_core_task_yield (&core->tasks);
