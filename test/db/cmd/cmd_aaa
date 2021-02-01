@@ -1,0 +1,34 @@
+NAME=anal.calls aa
+FILE=bins/pe/notputty.exe
+CMDS=<<EOF
+e anal.calls=false
+aa
+aflc
+e anal.calls=true
+af-*
+aa
+aflc
+EOF
+EXPECT=<<EOF
+23
+139
+EOF
+RUN
+
+NAME=analcalls af
+FILE=bins/mach0/mac-ls2
+CMDS=<<EOF
+e anal.calls=false
+af
+aflc
+e anal.calls=true
+af-*
+af
+aflc
+EOF
+EXPECT=<<EOF
+1
+35
+EOF
+RUN
+

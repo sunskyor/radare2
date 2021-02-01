@@ -1,23 +1,6 @@
 NAME=af localflag
 FILE=bins/mach0/mac-ls2
 CMDS=<<EOF
-e anal.calls=false
-af
-aflc
-e anal.calls=true
-af-*
-af
-aflc
-EOF
-EXPECT=<<EOF
-1
-35
-EOF
-RUN
-
-NAME=af localflag
-FILE=bins/mach0/mac-ls2
-CMDS=<<EOF
 af
 f.foobar=0x100001216
 pd 20~foo
