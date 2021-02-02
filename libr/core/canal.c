@@ -4169,20 +4169,17 @@ R_API int r_core_anal_all(RCore *core) {
 	if ((binmain = r_bin_get_sym (core->bin, R_BIN_SYM_MAIN))) {
 		if (binmain->paddr != UT64_MAX) {
 			ut64 addr = r_bin_get_vaddr (core->bin, binmain->paddr, binmain->vaddr);
-			r_core_af (core, addr, "main", anal_calls);
+			r_core_af (core, addr, NULL, anal_calls);
 		}
 	}
 	r_core_task_yield (&core->tasks);
 	if ((list = r_bin_get_entries (core->bin))) {
-		size_t count = 0;
 		r_list_foreach (list, iter, entry) {
 			if (entry->paddr == UT64_MAX) {
 				continue;
 			}
 			ut64 addr = r_bin_get_vaddr (core->bin, entry->paddr, entry->vaddr);
-			char *name = r_str_newf ("entry%zd", count++);
-			r_core_af (core, addr, name, anal_calls);
-			free (name);
+			r_core_af (core, addr, NULL, anal_calls);
 		}
 	}
 	r_core_task_yield (&core->tasks);
