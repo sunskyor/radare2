@@ -613,12 +613,10 @@ static bool database_load(R2RTestDatabase *db, const char *path, int depth) {
 				eprintf ("Skipping %s"R_SYS_DIR"%s because it requires additional dependencies.\n", path, subname);
 				continue;
 			}
-			if (skip_archos) {
-				if ((!strcmp (path, "archos") || r_str_endswith (path, R_SYS_DIR"archos"))
-					&& strcmp (subname, R2R_ARCH_OS)) {
-					eprintf ("Skipping %s"R_SYS_DIR"%s because it does not match the current platform.\n", path, subname);
-					continue;
-				}
+			bool is_archos_folder = !strcmp (path, "archos") || r_str_endswith (path, R_SYS_DIR"archos");
+			if (is_archos_folder && (skip_archos || strcmp (subname, R2R_ARCH_OS))) {
+				eprintf ("Skipping %s"R_SYS_DIR"%s because it does not match the current platform.\n", path, subname);
+				continue;
 			}
 			r_strbuf_setf (&subpath, "%s%s%s", path, R_SYS_DIR, subname);
 			if (!database_load (db, r_strbuf_get (&subpath), depth - 1)) {
