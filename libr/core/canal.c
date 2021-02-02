@@ -1938,8 +1938,10 @@ static bool is_skippable_addr(RCore *core, ut64 addr) {
  * If the function has been already analyzed, it adds a
  * reference to that fcn */
 R_API bool r_core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int depth) {
-	if (depth < 1) {
-		eprintf ("Message: Early deepness at 0x%08"PFMT64x"\n", at);
+	if (depth < 0) {
+		if (core->anal->verbose) {
+			eprintf ("Message: Early deepness at 0x%08"PFMT64x"\n", at);
+		}
 		return false;
 	}
 	if (from == UT64_MAX && is_skippable_addr (core, at)) {
@@ -3481,7 +3483,7 @@ static bool anal_path_exists(RCore *core, ut64 from, ut64 to, RList *bbs, int de
 	RListIter *iter = NULL;
 	RAnalRef *refi;
 
-	if (depth < 1) {
+	if (depth < 0) {
 		eprintf ("going too deep\n");
 		return false;
 	}
@@ -3705,7 +3707,7 @@ static int core_anal_followptr(RCore *core, int type, ut64 at, ut64 ptr, ut64 re
 		r_anal_xrefs_set (core->anal, at, ptr, t);
 		return true;
 	}
-	if (depth < 1) {
+	if (depth < 0) {
 		return false;
 	}
 	int wordsize = (int)(core->anal->bits / 8);
@@ -4169,12 +4171,15 @@ R_API int r_core_anal_all(RCore *core) {
 	if ((binmain = r_bin_get_sym (core->bin, R_BIN_SYM_MAIN))) {
 		if (binmain->paddr != UT64_MAX) {
 			ut64 addr = r_bin_get_vaddr (core->bin, binmain->paddr, binmain->vaddr);
-			r_core_af (core, addr, NULL, anal_calls);
+			r_core_af (core, addr, "main", anal_calls);
 		}
 	}
 	r_core_task_yield (&core->tasks);
 	if ((list = r_bin_get_entries (core->bin))) {
 		r_list_foreach (list, iter, entry) {
+			if (r_cons_is_breaked ()) {
+				break;
+			}
 			if (entry->paddr == UT64_MAX) {
 				continue;
 			}

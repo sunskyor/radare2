@@ -871,36 +871,40 @@ static void __add_vars_sdb(RCore *core, RAnalFunction *fcn) {
 	r_anal_fcn_vars_cache_init (core->anal, &cache, fcn);
 	RListIter *iter;
 	RAnalVar *var;
-	int arg_count = 0;
+	size_t arg_count = 0;
 
-	RList *all_vars = cache.rvars;
-	r_list_join (all_vars, cache.bvars);
-	r_list_join (all_vars, cache.svars);
-
-	RStrBuf key, value;
-	r_strbuf_init (&key);
-	r_strbuf_init (&value);
-
-	r_list_foreach (all_vars, iter, var) {
-		if (var->isarg) {
-			if (!r_strbuf_setf (&key, "func.%s.arg.%d", fcn->name, arg_count) ||
-				!r_strbuf_setf (&value, "%s,%s", var->type, var->name)) {
-				goto exit;
+	char *args = r_str_newf ("func.%s.args", fcn->name);
+	const bool has_args = R_STR_ISEMPTY (sdb_const_get (core->anal->sdb_types, args, 0));
+	if (has_args) {
+		RList *all_vars = cache.rvars;
+		r_list_join (all_vars, cache.bvars);
+		r_list_join (all_vars, cache.svars);
+		r_list_foreach (all_vars, iter, var) {
+			if (var->isarg) {
+				char *name = var->name;
+				char *k = r_str_newf ("func.%s.arg.%zd", fcn->name, arg_count++);
+				const char *o = sdb_const_get (core->anal->sdb_types, k, 0);
+				char *vname = o?strchr (o, '.'):NULL;
+				if (vname) name = vname+1;
+				char *v = r_str_newf ("%s.%s", var->type, name);
+				// eprintf("arg (%s) %s -- %s%c", k, v, var->name, 10);
+				char *s = strdup (name);
+				free (var->name);
+				var->name=s;
+				if (!o) {
+					sdb_set (core->anal->sdb_types, k, v, 0);
+				}
+				free (k);
+				free (v);
 			}
-			sdb_set (core->anal->sdb_types, r_strbuf_get (&key), r_strbuf_get (&value), 0);
-			arg_count++;
+		}
+		if (arg_count >= 0) {
+			char *v = r_str_newf ("%zd", arg_count);
+			sdb_set (core->anal->sdb_types, args, v, 0);
+			free (v);
 		}
 	}
-	if (arg_count > 0) {
-		if (!r_strbuf_setf (&key, "func.%s.args", fcn->name) ||
-			!r_strbuf_setf (&value, "%d", arg_count)) {
-			goto exit;
-		}
-		sdb_set (core->anal->sdb_types, r_strbuf_get (&key), r_strbuf_get (&value), 0);
-	}
-exit:
-	r_strbuf_fini (&key);
-	r_strbuf_fini (&value);
+	free (args);
 	r_anal_fcn_vars_cache_fini (&cache);
 }
 

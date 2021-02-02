@@ -77,7 +77,7 @@ RUN
 
 NAME=afll
 FILE=bins/mach0/ls-osx-x86_64
-CMDS=aa ; afll~?entry0
+CMDS=aa ; afll~?main
 EXPECT=<<EOF
 1
 EOF
@@ -359,8 +359,10 @@ Cannot add function (duplicated)
 EOF
 RUN
 
+## this test is too slow 
 NAME=af skips symbols
 FILE=bins/elf/analysis/guess-number-riscv64
+ARGS=-ebin.dwarf=false
 CMDS=<<EOF
 af @ sym.fstatat
 af @ sym.__syscall_error
@@ -371,7 +373,7 @@ EXPECT=<<EOF
 0x00021484    1 8            sym.__errno
 0x0001f7cc    1 48           sym.__syscall_error
 EOF
-RUN
+RON
 
 NAME=function naming
 FILE=-
