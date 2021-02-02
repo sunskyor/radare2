@@ -418,6 +418,11 @@ static char *anal_fcn_autoname(RCore *core, RAnalFunction *fcn, int dump, int mo
 						do_call = strdup (f->name + 4);
 						continue;
 					}
+					if (!strncmp (f->name, "dbg.", 4)) {
+						free (do_call);
+						do_call = strdup (f->name + 4);
+						continue;
+					}
 					if (!strncmp (f->name, "sym.imp.", 8)) {
 						free (do_call);
 						do_call = strdup (f->name + 8);
@@ -4195,7 +4200,7 @@ R_API int r_core_anal_all(RCore *core) {
 				break;
 			}
 			r_core_recover_vars (core, fcni, true);
-			if (!strncmp (fcni->name, "sym.", 4) || !strncmp (fcni->name, "main", 4)) {
+			if (!strncmp (fcni->name, "dbg.", 4) || !strncmp (fcni->name, "sym.", 4) || !strncmp (fcni->name, "main", 4)) {
 				fcni->type = R_ANAL_FCN_TYPE_SYM;
 			}
 		}

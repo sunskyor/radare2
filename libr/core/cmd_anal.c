@@ -874,35 +874,32 @@ static void __add_vars_sdb(RCore *core, RAnalFunction *fcn) {
 	size_t arg_count = 0;
 
 	char *args = r_str_newf ("func.%s.args", fcn->name);
-	const bool has_args = R_STR_ISEMPTY (sdb_const_get (core->anal->sdb_types, args, 0));
-	if (has_args) {
-		RList *all_vars = cache.rvars;
-		r_list_join (all_vars, cache.bvars);
-		r_list_join (all_vars, cache.svars);
-		r_list_foreach (all_vars, iter, var) {
-			if (var->isarg) {
-				char *name = var->name;
-				char *k = r_str_newf ("func.%s.arg.%zd", fcn->name, arg_count++);
-				const char *o = sdb_const_get (core->anal->sdb_types, k, 0);
-				char *vname = o?strchr (o, '.'):NULL;
-				if (vname) name = vname+1;
-				char *v = r_str_newf ("%s.%s", var->type, name);
-				// eprintf("arg (%s) %s -- %s%c", k, v, var->name, 10);
-				char *s = strdup (name);
-				free (var->name);
-				var->name=s;
-				if (!o) {
-					sdb_set (core->anal->sdb_types, k, v, 0);
-				}
-				free (k);
-				free (v);
+	RList *all_vars = cache.rvars;
+	r_list_join (all_vars, cache.bvars);
+	r_list_join (all_vars, cache.svars);
+	r_list_foreach (all_vars, iter, var) {
+		if (var->isarg) {
+			char *name = var->name;
+			char *k = r_str_newf ("func.%s.arg.%zd", fcn->name, arg_count++);
+			const char *o = sdb_const_get (core->anal->sdb_types, k, 0);
+			char *vname = o?strchr (o, ','):NULL;
+			if (vname) name = vname+1;
+			char *v = o?strdup(o): r_str_newf ("%s,%s", var->type, name);
+			 /// eprintf("arg (%s) %s -- %s%c", k, v, var->name, 10);
+			char *s = strdup (name);
+			free (var->name);
+			var->name=s;
+			if (!o) {
+				sdb_set (core->anal->sdb_types, k, v, 0);
 			}
-		}
-		if (arg_count >= 0) {
-			char *v = r_str_newf ("%zd", arg_count);
-			sdb_set (core->anal->sdb_types, args, v, 0);
+			free (k);
 			free (v);
 		}
+	}
+	if (arg_count >= 0) {
+		char *v = r_str_newf ("%zd", arg_count);
+		sdb_set (core->anal->sdb_types, args, v, 0);
+		free (v);
 	}
 	free (args);
 	r_anal_fcn_vars_cache_fini (&cache);

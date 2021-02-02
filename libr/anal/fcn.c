@@ -168,7 +168,8 @@ static bool isSymbolNextInstruction(RAnal *anal, RAnalOp *op) {
 	r_return_val_if_fail (anal && op && anal->flb.get_at, false);
 
 	RFlagItem *fi = anal->flb.get_at (anal->flb.f, op->addr + op->size, false);
-	return (fi && fi->name && (strstr (fi->name, "imp.") || strstr (fi->name, "sym.")
+	return (fi && fi->name && (strstr (fi->name, "imp.") || strstr (fi->name, "dbg.") 
+			|| strstr (fi->name, "sym.")
 			|| strstr (fi->name, "entry") || strstr (fi->name, "main")));
 }
 
