@@ -1937,16 +1937,16 @@ static bool is_skippable_addr(RCore *core, ut64 addr) {
 /* analyze a RAnalFunction at the address 'at'.
  * If the function has been already analyzed, it adds a
  * reference to that fcn */
-R_API int r_core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int depth) {
+R_API bool r_core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int depth) {
 	if (depth < 1) {
 		eprintf ("Message: Early deepness at 0x%08"PFMT64x"\n", at);
-		return 0;
+		return false;
 	}
 	if (from == UT64_MAX && is_skippable_addr (core, at)) {
 		if (core->anal->verbose) {
 			eprintf ("Message: Invalid address for function 0x%08"PFMT64x"\n", at);
 		}
-		return 0;
+		return false;
 	}
 
 	const bool use_esil = r_config_get_i (core->config, "anal.esil");
@@ -1974,12 +1974,6 @@ R_API int r_core_anal_fcn(RCore *core, ut64 at, ut64 from, int reftype, int dept
 
 	if ((from != UT64_MAX && !at) || at == UT64_MAX) {
 		eprintf ("Invalid address from 0x%08"PFMT64x"\n", from);
-		return false;
-	}
-	if (depth < 0) {
-		if (core->anal->verbose) {
-			eprintf ("Warning: anal depth reached\n");
-		}
 		return false;
 	}
 	if (r_cons_is_breaked ()) {
