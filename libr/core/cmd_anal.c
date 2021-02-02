@@ -4193,7 +4193,6 @@ static int cmd_anal_fcn(RCore *core, const char *input) {
 		int depth = r_config_get_i (core->config, "anal.depth");
 		bool analyze_recursively = r_config_get_i (core->config, "anal.calls");
 		RAnalFunction *fcn = NULL;
-eprintf("ANAL DEP %d%c", depth, 10);
 		ut64 addr = core->offset;
 		if (input[1] == 'r') {
 			input++;
