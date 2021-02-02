@@ -515,7 +515,6 @@ static inline bool does_arch_destroys_dst(const char *arch) {
 }
 
 static int fcn_recurse(RAnal *anal, RAnalFunction *fcn, ut64 addr, ut64 len, int depth) {
-	// 14KB in stack
 	if (depth < 1) {
 		if (anal->verbose) {
 			eprintf ("Too deep fcn_recurse at 0x%"PFMT64x "\n", addr);
@@ -524,7 +523,7 @@ static int fcn_recurse(RAnal *anal, RAnalFunction *fcn, ut64 addr, ut64 len, int
 	}
 	// TODO Store all this stuff in the heap so we save memory in the stack
 	RAnalOp *op = NULL;
-	const int continue_after_jump = anal->opt.afterjmp;
+	const bool continue_after_jump = anal->opt.afterjmp;
 	const int addrbytes = anal->iob.io ? anal->iob.io->addrbytes : 1;
 	char *last_reg_mov_lea_name = NULL;
 	RAnalBlock *bb = NULL;
@@ -545,10 +544,10 @@ static int fcn_recurse(RAnal *anal, RAnalFunction *fcn, ut64 addr, ut64 len, int
 		0
 	};
 	bool arch_destroys_dst = does_arch_destroys_dst (anal->cur->arch);
-	bool is_arm = anal->cur->arch && !strncmp (anal->cur->arch, "arm", 3);
-	bool is_x86 = is_arm ? false: anal->cur->arch && !strncmp (anal->cur->arch, "x86", 3);
-	bool is_amd64 = is_x86 ? fcn->cc && !strcmp (fcn->cc, "amd64") : false;
-	bool is_dalvik = is_x86? false: anal->cur->arch && !strncmp (anal->cur->arch, "dalvik", 6);
+	const bool is_arm = anal->cur->arch && !strncmp (anal->cur->arch, "arm", 3);
+	const bool is_x86 = is_arm ? false: anal->cur->arch && !strncmp (anal->cur->arch, "x86", 3);
+	const bool is_amd64 = is_x86 ? fcn->cc && !strcmp (fcn->cc, "amd64") : false;
+	const bool is_dalvik = is_x86? false: anal->cur->arch && !strncmp (anal->cur->arch, "dalvik", 6);
 	RRegItem *variadic_reg = NULL;
 	if (is_amd64) {
 		variadic_reg = r_reg_get (anal->reg, "rax", R_REG_TYPE_GPR);
@@ -561,9 +560,6 @@ static int fcn_recurse(RAnal *anal, RAnalFunction *fcn, ut64 addr, ut64 len, int
 	if (anal->sleep) {
 		r_sys_usleep (anal->sleep);
 	}
-static void *old_isamd64 = NULL;
-eprintf("%zd%c", old_isamd64 - (void*)&is_amd64, 10);
-old_isamd64 = &is_amd64;
 
 	// check if address is readable //:
 	if (!anal->iob.is_valid_offset (anal->iob.io, addr, 0)) {
@@ -597,7 +593,7 @@ old_isamd64 = &is_amd64;
 			return R_ANAL_RET_END;
 		}
 		if (anal->verbose) {
-			eprintf ("r_anal_fcn_bb() fails at 0x%"PFMT64x ".\n", addr);
+			eprintf ("r_anal_fcn_bb() fails at 0x%"PFMT64x "\n", addr);
 		}
 		return R_ANAL_RET_ERROR; // MUST BE NOT DUP
 	}
@@ -694,7 +690,7 @@ repeat:
 		}
 		const char *bp_reg = anal->reg->name[R_REG_NAME_BP];
 		const char *sp_reg = anal->reg->name[R_REG_NAME_SP];
-		bool has_stack_regs = bp_reg && sp_reg;
+		const bool has_stack_regs = bp_reg && sp_reg;
 
 		if (anal->opt.nopskip && fcn->addr == at) {
 			RFlagItem *fi = anal->flb.get_at (anal->flb.f, addr, false);
@@ -739,7 +735,7 @@ repeat:
 			}
 		}
 		if (!overlapped) {
-			ut64 newbbsize = bb->size + oplen;
+			const ut64 newbbsize = bb->size + oplen;
 			if (newbbsize > MAX_FCN_SIZE) {
 				gotoBeach (R_ANAL_RET_ERROR);
 			}
